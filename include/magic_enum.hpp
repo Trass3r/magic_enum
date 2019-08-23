@@ -54,6 +54,15 @@
 #  define MAGIC_ENUM_RANGE_MAX 128
 #endif
 
+// Allow to disable exceptions.
+#if (defined(__cpp_exceptions) || defined(__EXCEPTIONS) || defined(_CPPUNWIND)) && !defined(MAGIC_ENUM_NOEXCEPTION)
+#  include <stdexcept>
+#  define MAGIC_ENUM_THROW(exception) throw exception
+#else
+#  include <cstdlib>
+#  define MAGIC_ENUM_THROW(exception) std::abort()
+#endif
+
 namespace magic_enum {
 
 // Enum value must be in range [MAGIC_ENUM_RANGE_MIN, MAGIC_ENUM_RANGE_MAX]. By default MAGIC_ENUM_RANGE_MIN = -128, MAGIC_ENUM_RANGE_MAX = 128.
@@ -233,6 +242,43 @@ struct underlying_type_impl {};
 template <typename T>
 struct underlying_type_impl<T, true> : std::underlying_type<T> {};
 
+constexpr bool str_equals(std::string_view lhs, std::string_view rhs) noexcept {
+#if defined(_MSC_VER) && _MSC_VER < 1920
+  // See https://developercommunity.visualstudio.com/content/problem/625584/-builtin-strlen-gives-wrong-results-in-vs2017-tool.html
+  if (lhs.length() != rhs.length()) {
+    return false;
+  }
+
+  for (std::size_t i = 0; i < lhs.length(); ++i) {
+    if (lhs[i] != rhs[i]) {
+      return false;
+    }
+  }
+
+  return true;
+#else
+  return lhs == rhs;
+#endif
+}
+
+constexpr char char_to_lower(char c) noexcept {
+  return (c >= 'A' && c <= 'Z') ? c + ('a' - 'A') : c;
+}
+
+constexpr bool str_equals_nocase(std::string_view lhs, std::string_view rhs) noexcept {
+  if (lhs.length() != rhs.length()) {
+    return false;
+  }
+
+  for (std::size_t i = 0; i < lhs.length(); ++i) {
+    if (char_to_lower(lhs[i]) != char_to_lower(rhs[i])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 } // namespace magic_enum::detail
 
 // Checks whether T is an Unscoped enumeration type.
@@ -270,14 +316,14 @@ using underlying_type_t = typename underlying_type<T>::type;
 // Obtains enum value from enum string name.
 // Returns std::optional with enum value.
 template <typename E, typename D = detail::enable_if_enum_t<E>>
-[[nodiscard]] constexpr std::optional<D> enum_cast(std::string_view value) noexcept {
-  static_assert(detail::check_enum_v<E, D>, "magic_enum::enum_cast requires enum type.");
+[[nodiscard]] constexpr std::optional<D> enum_from_string_nothrow(std::string_view value) noexcept {
+  static_assert(detail::check_enum_v<E, D>, "magic_enum::enum_from_string_nothrow requires enum type.");
   constexpr auto values = detail::values_v<D>;
   constexpr auto count = detail::count_v<D>;
   constexpr auto names = detail::names_v<D>;
 
   for (std::size_t i = 0; i < count; ++i) {
-    if (names[i] == value) {
+    if (detail::str_equals(names[i], value)) {
       return values[i];
     }
   }
@@ -285,17 +331,101 @@ template <typename E, typename D = detail::enable_if_enum_t<E>>
   return std::nullopt; // Invalid value or out of range.
 }
 
+// Obtains enum value from enum string name.
+// Returns std::optional with enum value.
+template <typename E, typename D = detail::enable_if_enum_t<E>>
+[[nodiscard]] constexpr std::optional<D> enum_from_string_nocase_nothrow(std::string_view value) noexcept {
+  static_assert(detail::check_enum_v<E, D>, "magic_enum::enum_from_string_nocase_nothrow requires enum type.");
+  constexpr auto values = detail::values_v<D>;
+  constexpr auto count = detail::count_v<D>;
+  constexpr auto names = detail::names_v<D>;
+
+  for (std::size_t i = 0; i < count; ++i) {
+    if (detail::str_equals_nocase(names[i], value)) {
+      return values[i];
+    }
+  }
+
+  return std::nullopt; // Invalid value or out of range.
+}
+
+// Obtains enum value from enum string name.
+// Throws std::runtime_error if invalid value or out of range.
+template <typename E, typename D = detail::enable_if_enum_t<E>>
+[[nodiscard]] constexpr D enum_from_string(std::string_view value) {
+  static_assert(detail::check_enum_v<E, D>, "magic_enum::enum_from_string requires enum type.");
+
+  if (auto maybe = enum_from_string_nothrow<D>(value); maybe.has_value()) {
+    return maybe.value();
+  }
+
+  MAGIC_ENUM_THROW(std::runtime_error{"magic_enum::enum_from_string: invalid value or out of range"});
+}
+
+// Obtains enum value from enum string name.
+// Throws std::runtime_error if invalid value or out of range.
+template <typename E, typename D = detail::enable_if_enum_t<E>>
+[[nodiscard]] constexpr D enum_from_string_nocase(std::string_view value) {
+  static_assert(detail::check_enum_v<E, D>, "magic_enum::enum_from_string_nocase requires enum type.");
+
+  if (auto maybe = enum_from_string_nocase_nothrow<D>(value); maybe.has_value()) {
+    return maybe.value();
+  }
+
+  MAGIC_ENUM_THROW(std::runtime_error{"magic_enum::enum_from_string_nocase: invalid value or out of range"});
+}
+
 // Obtains enum value from integer value.
 // Returns std::optional with enum value.
 template <typename E, typename D = detail::enable_if_enum_t<E>>
-[[nodiscard]] constexpr std::optional<D> enum_cast(std::underlying_type_t<D> value) noexcept {
-  static_assert(detail::check_enum_v<E, D>, "magic_enum::enum_cast requires enum type.");
+[[nodiscard]] constexpr std::optional<D> enum_from_integral_nothrow(std::underlying_type_t<D> value) noexcept {
+  static_assert(detail::check_enum_v<E, D>, "magic_enum::enum_from_integral_nothrow requires enum type.");
 
   if (detail::name_impl<D>(static_cast<D>(value)).empty()) {
     return std::nullopt; // Invalid value or out of range.
   }
 
   return static_cast<D>(value);
+}
+
+// Obtains enum value from integer value.
+// Throws std::runtime_error if invalid value or out of range.
+template <typename E, typename D = detail::enable_if_enum_t<E>>
+[[nodiscard]] constexpr D enum_from_integral(std::underlying_type_t<D> value) {
+  static_assert(detail::check_enum_v<E, D>, "magic_enum::enum_from_integral requires enum type.");
+
+  if (auto maybe = enum_from_integral_nothrow(value); maybe.has_value()) {
+    return maybe.value();
+  }
+
+  MAGIC_ENUM_THROW(std::runtime_error{"magic_enum::enum_from_integral: invalid value or out of range"});
+}
+
+// Obtains enum value from integer value.
+// If the value is not the numeric value of one of the enum, the behavior is undefined.
+template <typename E, typename D = detail::enable_if_enum_t<E>>
+[[nodiscard]] constexpr D enum_from_integral_unchecked(std::underlying_type_t<D> value) noexcept {
+  static_assert(detail::check_enum_v<E, D>, "magic_enum::enum_from_integral_unchecked requires enum type.");
+
+  return static_cast<D>(value);
+}
+
+// Obtains enum value from enum string name. Alias enum_from_string_nothrow.
+// Returns std::optional with enum value.
+template <typename E, typename D = detail::enable_if_enum_t<E>>
+[[nodiscard]] constexpr std::optional<D> enum_cast(std::string_view value) noexcept {
+  static_assert(detail::check_enum_v<E, D>, "magic_enum::enum_cast requires enum type.");
+
+  return enum_from_string_nothrow<D>(value);
+}
+
+// Obtains enum value from integer value. Alias enum_from_integral_nothrow.
+// Returns std::optional with enum value.
+template <typename E, typename D = detail::enable_if_enum_t<E>>
+[[nodiscard]] constexpr std::optional<D> enum_cast(std::underlying_type_t<D> value) noexcept {
+  static_assert(detail::check_enum_v<E, D>, "magic_enum::enum_cast requires enum type.");
+
+  return enum_from_integral_nothrow<D>(value);
 }
 
 // Returns integer value from enum value.

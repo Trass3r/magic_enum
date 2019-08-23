@@ -50,68 +50,91 @@ struct enum_range<number> {
 using namespace magic_enum;
 
 TEST_CASE("enum_cast") {
-  SECTION("string") {
-#if defined(_MSC_VER) && _MSC_VER < 1920
-#  define constexpr // Visual Studio 2017 have bug with string_view constexpr compare.
-#endif
-
-    constexpr auto cr = enum_cast<Color>("RED");
+  SECTION("from_string") {
+    constexpr auto cr = enum_from_string_nothrow<Color>("RED");
     REQUIRE(cr.value() == Color::RED);
-    REQUIRE(enum_cast<Color>("GREEN").value() == Color::GREEN);
-    REQUIRE(enum_cast<Color>("BLUE").value() == Color::BLUE);
-    REQUIRE_FALSE(enum_cast<Color>("None").has_value());
+    REQUIRE(enum_from_string_nothrow<Color>("GREEN").value() == Color::GREEN);
+    REQUIRE(enum_from_string_nothrow<Color>("BLUE").value() == Color::BLUE);
+    REQUIRE_FALSE(enum_from_string_nothrow<Color>("None").has_value());
 
-    constexpr auto no = enum_cast<Numbers>("one");
+    constexpr auto no = enum_from_string_nothrow<Numbers>("one");
     REQUIRE(no.value() == Numbers::one);
-    REQUIRE(enum_cast<Numbers>("two").value() == Numbers::two);
-    REQUIRE(enum_cast<Numbers>("three").value() == Numbers::three);
-    REQUIRE_FALSE(enum_cast<Numbers>("many").has_value());
-    REQUIRE_FALSE(enum_cast<Numbers>("None").has_value());
+    REQUIRE(enum_from_string_nothrow<Numbers>("two").value() == Numbers::two);
+    REQUIRE(enum_from_string_nothrow<Numbers>("three").value() == Numbers::three);
+    REQUIRE_FALSE(enum_from_string_nothrow<Numbers>("many").has_value());
+    REQUIRE_FALSE(enum_from_string_nothrow<Numbers>("None").has_value());
 
-    constexpr auto dr = enum_cast<Directions>("Right");
-    REQUIRE(enum_cast<Directions>("Up").value() == Directions::Up);
-    REQUIRE(enum_cast<Directions>("Down").value() == Directions::Down);
+    constexpr auto dr = enum_from_string_nothrow<Directions>("Right");
+    REQUIRE(enum_from_string_nothrow<Directions>("Up").value() == Directions::Up);
+    REQUIRE(enum_from_string_nothrow<Directions>("Down").value() == Directions::Down);
     REQUIRE(dr.value() == Directions::Right);
-    REQUIRE(enum_cast<Directions>("Left").value() == Directions::Left);
-    REQUIRE_FALSE(enum_cast<Directions>("None").has_value());
+    REQUIRE(enum_from_string_nothrow<Directions>("Left").value() == Directions::Left);
+    REQUIRE_FALSE(enum_from_string_nothrow<Directions>("None").has_value());
 
-    constexpr auto nt = enum_cast<number>("three");
-    REQUIRE(enum_cast<number>("one").value() == number::one);
-    REQUIRE(enum_cast<number>("two").value() == number::two);
+    constexpr auto nt = enum_from_string_nothrow<number>("three");
+    REQUIRE(enum_from_string_nothrow<number>("one").value() == number::one);
+    REQUIRE(enum_from_string_nothrow<number>("two").value() == number::two);
     REQUIRE(nt.value() == number::three);
-    REQUIRE_FALSE(enum_cast<number>("four").has_value());
-    REQUIRE_FALSE(enum_cast<number>("None").has_value());
-
-#undef constexpr
+    REQUIRE_FALSE(enum_from_string_nothrow<number>("four").has_value());
+    REQUIRE_FALSE(enum_from_string_nothrow<number>("None").has_value());
   }
 
-  SECTION("integer") {
-    constexpr auto cr = enum_cast<Color>(-12);
+  SECTION("from_string_nocase") {
+    constexpr auto cr = enum_from_string_nocase_nothrow<Color>("ReD");
     REQUIRE(cr.value() == Color::RED);
-    REQUIRE(enum_cast<Color>(7).value() == Color::GREEN);
-    REQUIRE(enum_cast<Color>(15).value() == Color::BLUE);
-    REQUIRE_FALSE(enum_cast<Color>(0).has_value());
+    REQUIRE(enum_from_string_nocase_nothrow<Color>("GrEeN").value() == Color::GREEN);
+    REQUIRE(enum_from_string_nocase_nothrow<Color>("BLUE").value() == Color::BLUE);
+    REQUIRE_FALSE(enum_from_string_nocase_nothrow<Color>("None").has_value());
 
-    constexpr auto no = enum_cast<Numbers>(10);
+    constexpr auto no = enum_from_string_nocase_nothrow<Numbers>("oNe");
     REQUIRE(no.value() == Numbers::one);
-    REQUIRE(enum_cast<Numbers>(20).value() == Numbers::two);
-    REQUIRE(enum_cast<Numbers>(30).value() == Numbers::three);
-    REQUIRE_FALSE(enum_cast<Numbers>(127).has_value());
-    REQUIRE_FALSE(enum_cast<Numbers>(0).has_value());
+    REQUIRE(enum_from_string_nocase_nothrow<Numbers>("Two").value() == Numbers::two);
+    REQUIRE(enum_from_string_nocase_nothrow<Numbers>("three").value() == Numbers::three);
+    REQUIRE_FALSE(enum_from_string_nocase_nothrow<Numbers>("many").has_value());
+    REQUIRE_FALSE(enum_from_string_nocase_nothrow<Numbers>("None").has_value());
 
-    constexpr auto dr = enum_cast<Directions>(120);
-    REQUIRE(enum_cast<Directions>(85).value() == Directions::Up);
-    REQUIRE(enum_cast<Directions>(-42).value() == Directions::Down);
+    constexpr auto dr = enum_from_string_nocase_nothrow<Directions>("RiGHt");
+    REQUIRE(enum_from_string_nocase_nothrow<Directions>("up").value() == Directions::Up);
+    REQUIRE(enum_from_string_nocase_nothrow<Directions>("Down").value() == Directions::Down);
     REQUIRE(dr.value() == Directions::Right);
-    REQUIRE(enum_cast<Directions>(-120).value() == Directions::Left);
-    REQUIRE_FALSE(enum_cast<Directions>(0).has_value());
+    REQUIRE(enum_from_string_nocase_nothrow<Directions>("Left").value() == Directions::Left);
+    REQUIRE_FALSE(enum_from_string_nocase_nothrow<Directions>("None").has_value());
 
-    constexpr auto nt = enum_cast<number>(300);
-    REQUIRE(enum_cast<number>(100).value() == number::one);
-    REQUIRE(enum_cast<number>(200).value() == number::two);
+    constexpr auto nt = enum_from_string_nocase_nothrow<number>("ThrEe");
+    REQUIRE(enum_from_string_nocase_nothrow<number>("One").value() == number::one);
+    REQUIRE(enum_from_string_nocase_nothrow<number>("two").value() == number::two);
     REQUIRE(nt.value() == number::three);
-    REQUIRE_FALSE(enum_cast<number>(400).has_value());
-    REQUIRE_FALSE(enum_cast<number>(0).has_value());
+    REQUIRE_FALSE(enum_from_string_nocase_nothrow<number>("four").has_value());
+    REQUIRE_FALSE(enum_from_string_nocase_nothrow<number>("None").has_value());
+  }
+
+  SECTION("from_integral") {
+    constexpr auto cr = enum_from_integral_nothrow<Color>(-12);
+    REQUIRE(cr.value() == Color::RED);
+    REQUIRE(enum_from_integral_nothrow<Color>(7).value() == Color::GREEN);
+    REQUIRE(enum_from_integral_nothrow<Color>(15).value() == Color::BLUE);
+    REQUIRE_FALSE(enum_from_integral_nothrow<Color>(0).has_value());
+
+    constexpr auto no = enum_from_integral_nothrow<Numbers>(10);
+    REQUIRE(no.value() == Numbers::one);
+    REQUIRE(enum_from_integral_nothrow<Numbers>(20).value() == Numbers::two);
+    REQUIRE(enum_from_integral_nothrow<Numbers>(30).value() == Numbers::three);
+    REQUIRE_FALSE(enum_from_integral_nothrow<Numbers>(127).has_value());
+    REQUIRE_FALSE(enum_from_integral_nothrow<Numbers>(0).has_value());
+
+    constexpr auto dr = enum_from_integral_nothrow<Directions>(120);
+    REQUIRE(enum_from_integral_nothrow<Directions>(85).value() == Directions::Up);
+    REQUIRE(enum_from_integral_nothrow<Directions>(-42).value() == Directions::Down);
+    REQUIRE(dr.value() == Directions::Right);
+    REQUIRE(enum_from_integral_nothrow<Directions>(-120).value() == Directions::Left);
+    REQUIRE_FALSE(enum_from_integral_nothrow<Directions>(0).has_value());
+
+    constexpr auto nt = enum_from_integral_nothrow<number>(300);
+    REQUIRE(enum_from_integral_nothrow<number>(100).value() == number::one);
+    REQUIRE(enum_from_integral_nothrow<number>(200).value() == number::two);
+    REQUIRE(nt.value() == number::three);
+    REQUIRE_FALSE(enum_from_integral_nothrow<number>(400).has_value());
+    REQUIRE_FALSE(enum_from_integral_nothrow<number>(0).has_value());
   }
 }
 
@@ -295,7 +318,7 @@ TEST_CASE("enum_entries") {
 
 TEST_CASE("ostream_operators") {
   auto test_ostream = [](auto e, std::string_view name) {
-    using namespace magic_enum::ostream_operators;
+    using namespace ostream_operators;
     std::stringstream ss;
     ss << e;
     REQUIRE(ss.str() == name);
@@ -330,7 +353,7 @@ TEST_CASE("ostream_operators") {
 }
 
 TEST_CASE("bitwise_operators") {
-  using namespace magic_enum::bitwise_operators;
+  using namespace bitwise_operators;
 
   SECTION("operator^") {
     REQUIRE(enum_integer(~Color::RED) == ~enum_integer(Color::RED));
