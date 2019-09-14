@@ -101,14 +101,5 @@ int main() {
   static_assert(magic_enum::is_fixed_enum_v<Color>);
   static_assert(magic_enum::is_fixed_enum_v<Flags>);
 
-  // Enum pair (value enum, string enum name) sequence.
-  constexpr auto color_entries = magic_enum::enum_entries<Color>();
-  std::cout << "Colors entries:";
-  for (auto& e : color_entries) {
-    std::cout << " "  << e.second << " = " << static_cast<int>(e.first);
-  }
-  std::cout << std::endl;
-  // Color entries: RED = -10 BLUE = 0 GREEN = 10
-
   return 0;
 }

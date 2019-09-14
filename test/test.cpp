@@ -53,10 +53,6 @@ static_assert(is_magic_enum_supported, "magic_enum: Unsupported compiler (https:
 
 TEST_CASE("enum_cast") {
   SECTION("string") {
-#if defined(_MSC_VER) && _MSC_VER < 1920
-#  define constexpr // Visual Studio 2017 have bug with string_view constexpr compare.
-#endif
-
     constexpr auto cr = enum_cast<Color>("RED");
     REQUIRE(cr.value() == Color::RED);
     REQUIRE(enum_cast<Color>("GREEN").value() == Color::GREEN);
@@ -83,15 +79,14 @@ TEST_CASE("enum_cast") {
     REQUIRE(nt.value() == number::three);
     REQUIRE_FALSE(enum_cast<number>("four").has_value());
     REQUIRE_FALSE(enum_cast<number>("None").has_value());
-
-#undef constexpr
   }
 
   SECTION("integer") {
+    Color cm[3] = {Color::RED, Color::GREEN, Color::BLUE};
     constexpr auto cr = enum_cast<Color>(-12);
     REQUIRE(cr.value() == Color::RED);
     REQUIRE(enum_cast<Color>(7).value() == Color::GREEN);
-    REQUIRE(enum_cast<Color>(15).value() == Color::BLUE);
+    REQUIRE(enum_cast<Color>((int)cm[2]).value() == Color::BLUE);
     REQUIRE_FALSE(enum_cast<Color>(0).has_value());
 
     constexpr auto no = enum_cast<Numbers>(10);
@@ -118,10 +113,11 @@ TEST_CASE("enum_cast") {
 }
 
 TEST_CASE("enum_integer") {
+  Color cm[3] = {Color::RED, Color::GREEN, Color::BLUE};
   constexpr auto cr = enum_integer(Color::RED);
   REQUIRE(cr == -12);
   REQUIRE(enum_integer(Color::GREEN) == 7);
-  REQUIRE(enum_integer(Color::BLUE) == 15);
+  REQUIRE(enum_integer(cm[2]) == 15);
   REQUIRE(enum_integer(static_cast<Color>(0)) == 0);
 
   constexpr auto no = enum_integer(Numbers::one);
@@ -144,6 +140,36 @@ TEST_CASE("enum_integer") {
   REQUIRE(nt == 300);
   REQUIRE(enum_integer(number::four) == 400);
   REQUIRE(enum_integer(static_cast<number>(0)) == 0);
+}
+
+TEST_CASE("enum_index") {
+  Color cm[3] = {Color::RED, Color::GREEN, Color::BLUE};
+  constexpr auto cr = enum_index(Color::RED);
+  REQUIRE(cr.value() == 0);
+  REQUIRE(enum_index(Color::GREEN).value() == 1);
+  REQUIRE(enum_index(cm[2]).value() == 2);
+  REQUIRE_FALSE(enum_index(static_cast<Color>(0)).has_value());
+
+  constexpr auto no = enum_index(Numbers::one);
+  REQUIRE(no.value() == 0);
+  REQUIRE(enum_index(Numbers::two).value() == 1);
+  REQUIRE(enum_index(Numbers::three).value() == 2);
+  REQUIRE_FALSE(enum_index(Numbers::many).has_value());
+  REQUIRE_FALSE(enum_index(static_cast<Numbers>(0)).has_value());
+
+  constexpr auto dr = enum_index(Directions::Right);
+  REQUIRE(enum_index(Directions::Left).value() == 0);
+  REQUIRE(enum_index(Directions::Down).value() == 1);
+  REQUIRE(enum_index(Directions::Up).value() == 2);
+  REQUIRE(dr.value() == 3);
+  REQUIRE_FALSE(enum_index(static_cast<Directions>(0)).has_value());
+
+  constexpr auto nt = enum_index(number::three);
+  REQUIRE(enum_index(number::one).value() == 0);
+  REQUIRE(enum_index(number::two).value() == 1);
+  REQUIRE(nt.value() == 2);
+  REQUIRE_FALSE(enum_index(number::four).has_value());
+  REQUIRE_FALSE(enum_index(static_cast<number>(0)).has_value());
 }
 
 TEST_CASE("enum_value") {
@@ -279,20 +305,6 @@ TEST_CASE("enum_names") {
 
   auto s4 = enum_names<number>();
   REQUIRE(s4 == std::array<std::string_view, 3>{{"one", "two", "three"}});
-}
-
-TEST_CASE("enum_entries") {
-  constexpr auto s1 = enum_entries<Color>();
-  REQUIRE(s1 == std::array<std::pair<Color, std::string_view>, 3>{{{Color::RED, "RED"}, {Color::GREEN, "GREEN"}, {Color::BLUE, "BLUE"}}});
-
-  auto s2 = enum_entries<Numbers>();
-  REQUIRE(s2 == std::array<std::pair<Numbers, std::string_view>, 3>{{{Numbers::one, "one"}, {Numbers::two, "two"}, {Numbers::three, "three"}}});
-
-  constexpr auto s3 = enum_entries<Directions>();
-  REQUIRE(s3 == std::array<std::pair<Directions, std::string_view>, 4>{{{Directions::Left, "Left"}, {Directions::Down, "Down"}, {Directions::Up, "Up"}, {Directions::Right, "Right"}}});
-
-  auto s4 = enum_entries<number>();
-  REQUIRE(s4 == std::array<std::pair<number, std::string_view>, 3>{{{number::one, "one"}, {number::two, "two"}, {number::three, "three"}}});
 }
 
 TEST_CASE("ostream_operators") {
@@ -432,4 +444,13 @@ TEST_CASE("type_traits") {
   REQUIRE(is_fixed_enum_v<Numbers>);
   REQUIRE_FALSE(is_fixed_enum_v<Directions>);
   REQUIRE(is_fixed_enum_v<number>);
+}
+
+TEST_CASE("enum_traits") {
+  SECTION("type_name") {
+    REQUIRE(enum_traits<Color>::type_name == "Color");
+    REQUIRE(enum_traits<Numbers>::type_name == "Numbers");
+    REQUIRE(enum_traits<Directions>::type_name == "Directions");
+    REQUIRE(enum_traits<number>::type_name == "number");
+  }
 }
