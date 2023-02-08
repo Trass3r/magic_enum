@@ -18,6 +18,8 @@ jobs:
       shell: powershell
       if: ${{ matrix.config.os ==  'windows-2022' }}
       run: |
+        wget https://github.com/microsoft/winget-cli/releases/download/v1.4.10173/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle -out Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
+        add-appxpackage -Path ".\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
         winget install "Windows Performance Analyzer (Preview)"
         wpa -version
         wget https://gist.githubusercontent.com/Trass3r/ab7cbe5686323ae63a67a32915d5edfc/raw/59993931ccfb366e3c065dc7d2fd202631256e89/test.wpaProfile -out test.wpaProfile
