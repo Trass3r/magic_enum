@@ -20,6 +20,7 @@ jobs:
       run: |
         wget https://go.microsoft.com/fwlink/?linkid=2196127 -out adksetup.exe
         .\adksetup.exe /quiet /norestart /features OptionId.WindowsPerformanceToolkit
+        "C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\wpa.exe" -version
         wget https://gist.githubusercontent.com/Trass3r/ab7cbe5686323ae63a67a32915d5edfc/raw/59993931ccfb366e3c065dc7d2fd202631256e89/test.wpaProfile -out test.wpaProfile
     - uses: actions/checkout@v3
 
@@ -37,7 +38,7 @@ jobs:
         cmake --build . --config Release
         vcperf -stop -templates MyVCSession build.etl
         #wpa -version
-        wpaexporter build.etl -profile ../test.wpaProfile -delimiter "\t"
+        "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\wpaexporter" build.etl -profile ../test.wpaProfile -delimiter "\t"
         cat *.csv
 
         ctest --output-on-failure -C Release
