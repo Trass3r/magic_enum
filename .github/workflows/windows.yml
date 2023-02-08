@@ -36,8 +36,7 @@ jobs:
         vcperf -start -level3 MyVCSession
         cmake --build . --config Release
         vcperf -stop -templates MyVCSession build.etl
-        #wpa -version
-        "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\wpaexporter" build.etl -profile ../test.wpaProfile -delimiter "\t"
+        wpaexporter build.etl -profile ../test.wpaProfile -delimiter "\t"
         cat *.csv
 
         ctest --output-on-failure -C Release
