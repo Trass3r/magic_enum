@@ -34,11 +34,11 @@ jobs:
         cmake .. -A x64
 
         vcperf -start -level3 MyVCSession
-        wpa -version
         cmake --build . --config Release
         vcperf -stop -templates MyVCSession build.etl
+        #wpa -version
         wpaexporter build.etl -profile ../test.wpaProfile -delimiter "\t"
-        type "C++_Build_Insights_-_Template_Instantiations_My_Stats.csv"
+        cat *.csv
 
         ctest --output-on-failure -C Release
         cmake --build . --config Debug
