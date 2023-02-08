@@ -28,6 +28,10 @@ jobs:
         cmake --build . --config Debug
         ctest --output-on-failure -C Debug
 
+    - name: Install WPT
+      run: |
+        wget https://go.microsoft.com/fwlink/?linkid=2196127 -out adksetup.exe
+        .\adksetup.exe /quiet /features OptionId.WindowsPerformanceToolkit
     - name: Build x64
       shell: bash
       run: |
