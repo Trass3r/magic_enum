@@ -23,17 +23,7 @@ jobs:
         wget https://gist.githubusercontent.com/Trass3r/ab7cbe5686323ae63a67a32915d5edfc/raw/59993931ccfb366e3c065dc7d2fd202631256e89/test.wpaProfile
     - uses: actions/checkout@v3
 
-    - name: Build Win32
-      shell: bash
-      run: |
-        rm -rf build
-        mkdir build
-        cd build
-        cmake .. -A Win32
-        cmake --build . --config Release
-        ctest --output-on-failure -C Release
-        cmake --build . --config Debug
-        ctest --output-on-failure -C Debug
+    - uses: ilammy/msvc-dev-cmd@v1
 
     - name: Build x64
       shell: bash
@@ -42,8 +32,13 @@ jobs:
         mkdir build
         cd build
         cmake .. -A x64
+
+        vcperf -start -level3 MyVCSession
         cmake --build . --config Release
+        vcperf -stop -templates MyVCSession build.etl
+        wpaexporter build.etl -profile ../test.wpaProfile -delimiter "\t"
+        type "C++_Build_Insights_-_Template_Instantiations_My_Stats.csv"
+
         ctest --output-on-failure -C Release
         cmake --build . --config Debug
         ctest --output-on-failure -C Debug
-
