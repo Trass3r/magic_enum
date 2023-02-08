@@ -15,7 +15,7 @@ jobs:
     name: "${{matrix.config.vs}}"
     steps:
     - name: Install WPT
-      if: ${{ matrix.config.os ==  windows-2022 }}
+      if: ${{ matrix.config.os ==  'windows-2022' }}
       run: |
         wget https://go.microsoft.com/fwlink/?linkid=2196127 -out adksetup.exe
         .\adksetup.exe /quiet /features OptionId.WindowsPerformanceToolkit
