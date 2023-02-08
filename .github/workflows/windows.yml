@@ -19,8 +19,9 @@ jobs:
       if: ${{ matrix.config.os ==  'windows-2022' }}
       run: |
         wget https://go.microsoft.com/fwlink/?linkid=2196127 -out adksetup.exe
-        .\adksetup.exe /quiet /features OptionId.WindowsPerformanceToolkit
+        .\adksetup.exe /quiet /norestart /features OptionId.WindowsPerformanceToolkit
         wget https://gist.githubusercontent.com/Trass3r/ab7cbe5686323ae63a67a32915d5edfc/raw/59993931ccfb366e3c065dc7d2fd202631256e89/test.wpaProfile
+        wpa -version
     - uses: actions/checkout@v3
 
     - uses: ilammy/msvc-dev-cmd@v1
